@@ -31,7 +31,7 @@
             <div id="windows-command" class="hidden">
                 <p class="text-gray-600 mb-3">Windows環境では、以下のコマンドを実行すると結果が自動でクリップボードにコピーされます。</p>
                 <div class="bg-gray-900 text-white p-4 rounded-lg font-mono text-sm relative">
-                    <code>git log --pretty=format:'%an' | clip</code>
+                    <code>git log --all --pretty=format:'%an' | clip</code>
                     <button onclick="copyCommand(this, `git log --all --pretty=format:'%an' | clip`)" class="absolute top-3 right-3 bg-gray-700 hover:bg-gray-600 text-white py-1 px-2 rounded-md text-xs">コピー</button>
                 </div>
             </div>
@@ -40,7 +40,7 @@
             <div id="other-command" class="hidden">
                 <p class="text-gray-600 mb-3">分析したいリポジトリのフォルダで以下のコマンドを実行し、表示された結果をすべてコピーしてください。</p>
                 <div class="bg-gray-900 text-white p-4 rounded-lg font-mono text-sm relative">
-                    <code>git log --pretty=format:'%an'</code>
+                    <code>git log --all --pretty=format:'%an'</code>
                     <button onclick="copyCommand(this, `git log --all --pretty=format:'%an'`)" class="absolute top-3 right-3 bg-gray-700 hover:bg-gray-600 text-white py-1 px-2 rounded-md text-xs">コピー</button>
                 </div>
             </div>
