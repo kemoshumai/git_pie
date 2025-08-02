@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gitコミット貢献度グラフジェネレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-3xl mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-lg">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Gitコミット貢献度グラフジェネレーター</h1>
+            <p class="text-gray-600 mt-2">コミットログを貼り付けて、貢献度の円グラフを生成します。</p>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-gray-800 flex items-center">
+                <span class="bg-indigo-500 text-white rounded-full h-8 w-8 flex items-center justify-center mr-3 font-bold">1</span>
+                コミットログを取得
+            </h2>
+            
+            <!-- For Windows -->
+            <div id="windows-command" class="hidden">
+                <p class="text-gray-600 mb-3">Windows環境では、以下のコマンドを実行すると結果が自動でクリップボードにコピーされます。</p>
+                <div class="bg-gray-900 text-white p-4 rounded-lg font-mono text-sm relative">
+                    <code>git log --pretty=format:'%an' | clip</code>
+                    <button onclick="copyCommand(this, `git log --pretty=format:'%an' | clip`)" class="absolute top-3 right-3 bg-gray-700 hover:bg-gray-600 text-white py-1 px-2 rounded-md text-xs">コピー</button>
+                </div>
+            </div>
+
+            <!-- For Mac/Linux -->
+            <div id="other-command" class="hidden">
+                <p class="text-gray-600 mb-3">分析したいリポジトリのフォルダで以下のコマンドを実行し、表示された結果をすべてコピーしてください。</p>
+                <div class="bg-gray-900 text-white p-4 rounded-lg font-mono text-sm relative">
+                    <code>git log --pretty=format:'%an'</code>
+                    <button onclick="copyCommand(this, `git log --pretty=format:'%an'`)" class="absolute top-3 right-3 bg-gray-700 hover:bg-gray-600 text-white py-1 px-2 rounded-md text-xs">コピー</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-gray-800 flex items-center">
+                <span class="bg-indigo-500 text-white rounded-full h-8 w-8 flex items-center justify-center mr-3 font-bold">2</span>
+                ログを貼り付けてグラフを生成
+            </h2>
+            <textarea id="authorData" rows="10" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="ここにクリップボードの内容を貼り付けます..."></textarea>
+            <button onclick="generateChart()" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105">
+                グラフを生成する
+            </button>
+        </div>
+
+        <!-- Result -->
+        <div id="result" class="hidden">
+            <h2 class="text-xl font-semibold mb-3 text-gray-800 flex items-center">
+                <span class="bg-indigo-500 text-white rounded-full h-8 w-8 flex items-center justify-center mr-3 font-bold">3</span>
+                結果
+            </h2>
+            <div class="bg-gray-100 p-6 rounded-lg">
+                <p class="text-gray-700 mb-4">グラフが生成されました。下の画像をScrapboxに貼り付けるか、URLを共有してください。</p>
+                <div id="chartContainer" class="mb-4 flex justify-center items-center bg-white p-4 rounded-lg shadow-inner">
+                    <!-- Chart image will be inserted here -->
+                </div>
+                <label for="chartUrl" class="block text-sm font-medium text-gray-700 mb-1">Scrapbox用 画像URL:</label>
+                <div class="relative">
+                    <input type="text" id="chartUrl" readonly class="w-full p-3 bg-white border border-gray-300 rounded-lg font-mono text-sm">
+                    <button onclick="copyUrl(this)" class="absolute top-1/2 right-3 -translate-y-1/2 bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded-md text-xs">コピー</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // OSを判別して適切なコマンドを表示
+        window.addEventListener('DOMContentLoaded', () => {
+            const isWindows = navigator.platform.toUpperCase().indexOf('WIN') !== -1;
+            if (isWindows) {
+                document.getElementById('windows-command').classList.remove('hidden');
+            } else {
+                document.getElementById('other-command').classList.remove('hidden');
+            }
+        });
+
+        function copyCommand(button, command) {
+            const tempInput = document.createElement('textarea');
+            document.body.appendChild(tempInput);
+            tempInput.value = command;
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            const originalText = button.innerText;
+            button.innerText = 'コピー完了!';
+            setTimeout(() => {
+                button.innerText = originalText;
+            }, 1500);
+        }
+
+        function copyUrl(button) {
+            const urlInput = document.getElementById('chartUrl');
+            urlInput.select();
+            document.execCommand('copy');
+
+            const originalText = button.innerText;
+            button.innerText = 'コピー完了!';
+            setTimeout(() => {
+                button.innerText = originalText;
+            }, 1500);
+        }
+
+        function generateChart() {
+            const authorData = document.getElementById('authorData').value.trim();
+            if (!authorData) {
+                alert('コミットログを貼り付けてください。');
+                return;
+            }
+
+            // Windows (CRLF) と Mac/Linux (LF) の両方の改行コードに対応
+            const authors = authorData.split(/\r\n|\r|\n/);
+            const counts = authors.reduce((acc, author) => {
+                const trimmedAuthor = author.trim();
+                // 空の行と 'Your Name' を除外してカウント
+                if(trimmedAuthor && trimmedAuthor !== 'Your Name') {
+                    acc[trimmedAuthor] = (acc[trimmedAuthor] || 0) + 1;
+                }
+                return acc;
+            }, {});
+
+            if (Object.keys(counts).length === 0) {
+                alert('有効なコミット者が見つかりませんでした。ログの内容を確認してください。');
+                return;
+            }
+
+            // コミット数でソート
+            const sortedAuthors = Object.entries(counts).sort(([,a],[,b]) => b-a);
+            
+            const labels = sortedAuthors.map(entry => entry[0]);
+            const data = sortedAuthors.map(entry => entry[1]);
+
+            // 指定された配色
+            const colors = ["#FF3784", "#36A2EB", "#4BC0C0", "#F77825", "#9966FF"];
+
+            const chartConfig = {
+                type: 'outlabeledPie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        // 指定された色をループして使用
+                        backgroundColor: data.map((_, i) => colors[i % colors.length]),
+                    }]
+                },
+                options: {
+                    title: {
+                        display: true,
+                        text: 'コミット回数グラフ'
+                    },
+                    plugins: {
+                        legend: false,
+                        // outlabelsプラグインの設定
+                        outlabels: {
+                            text: '%l %p', // ラベル(名前)とパーセンテージを表示
+                            color: '#ffffff',
+                            stretch: 35,
+                            font: {
+                                resizable: true,
+                                minSize: 12,
+                                maxSize: 18,
+                                weight: 'bold'
+                            },
+                        },
+                        datalabels: {
+                            text: '%c', // ラベル(名前)とパーセンテージを表示
+                            color: '#ffffff',
+                            stretch: 16,
+                            font: {
+                                resizable: true,
+                                minSize: 12,
+                                maxSize: 18,
+                                weight: 'bold'
+                            },
+                        }
+                    }
+                }
+            };
+            
+            // 背景色を白にする
+            const chartUrl = 'https://quickchart.io/chart?backgroundColor=rgb(255,255,255)&c=' + encodeURIComponent(JSON.stringify(chartConfig));
+
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = `<img src="${chartUrl}" alt="コミット貢献度グラフ" class="max-w-full h-auto rounded-lg" onerror="this.alt='グラフの生成に失敗しました。入力データを確認してください。'; this.src='https://placehold.co/600x400/FEE2E2/B91C1C?text=Error';">`;
+            
+            const urlInput = document.getElementById('chartUrl');
+            urlInput.value = `[${chartUrl}#.png]`; // Scrapbox format
+            
+            document.getElementById('result').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
